@@ -9,22 +9,35 @@
 ```
 my-midi-generator/
 ├── src/
-│   ├── __init__.py              # Package init
-│   ├── midi_generator.py        # Main generator (text file → MIDI) ← primary source file
-│   ├── midi gen 2.py            # Standalone bass line generator (uses midiutil)
-│   └── midi gen grok.py         # Standalone melodic lead generator (uses midiutil)
+│   ├── __init__.py                    # Package init
+│   ├── multi_track_midi_generator.py  # Multi-track generator ← active development
+│   ├── midi_generator.py              # Original single-track generator
+│   ├── midi gen 2.py                  # Standalone bass line generator (uses midiutil)
+│   └── midi gen grok.py              # Standalone melodic lead generator (uses midiutil)
 ├── backup/
-│   └── note01.py                # Earlier standalone nightrun melody generator (uses mido)
-├── output/                      # Generated .mid and .log files go here
-├── main.py                      # PyCharm placeholder (not used for MIDI generation)
-├── example_input.txt            # Sample input: 8-bar D major melody
-├── requirements.txt             # Dependencies
+│   └── note01.py                      # Earlier standalone nightrun melody generator (uses mido)
+├── output/                            # Generated .mid and .log files go here
+├── main.py                            # PyCharm placeholder (not used for MIDI generation)
+├── example_input.txt                  # Sample input: 8-bar D major melody
+├── example_lead.txt                   # Multi-track example: lead synth (C minor)
+├── example_bass.txt                   # Multi-track example: synth bass (C minor)
+├── example_pad.txt                    # Multi-track example: ambient pad (C minor)
+├── requirements.txt                   # Dependencies
 └── CLAUDE.md
 ```
 
-### Key file: `src/midi_generator.py`
+### Key file: `src/multi_track_midi_generator.py`
 
-This is the main and most developed script. It:
+The multi-track generator. Builds on all features of `midi_generator.py` and adds:
+- Multiple tracks in a single MIDI file (lead, bass, pad, etc.)
+- Per-track settings: name, program (instrument), channel, velocity
+- Configurable tempo via `--tempo` flag
+- Auto-assigns MIDI channels to avoid conflicts (skips channel 9/drums)
+- Backward compatible — works with single input files too
+
+### Original: `src/midi_generator.py`
+
+The original single-track generator. It:
 - Reads notes from a text file (4 notes per bar, minimum 4 bars)
 - Supports an optional `rhythm:` line for custom rhythm patterns
 - Converts note names to MIDI numbers
@@ -33,7 +46,7 @@ This is the main and most developed script. It:
 
 ### Standalone scripts (`src/midi gen 2.py`, `src/midi gen grok.py`, `backup/note01.py`)
 
-These are earlier experiments with hardcoded note sequences. They use either `mido` or `midiutil` directly and don't read from text files.
+Earlier experiments with hardcoded note sequences. They use either `mido` or `midiutil` directly and don't read from text files.
 
 ## Commands
 
@@ -41,13 +54,14 @@ These are earlier experiments with hardcoded note sequences. They use either `mi
 # Install dependencies
 pip install -r requirements.txt
 
-# Run the main generator (uses example_input.txt by default)
+# Multi-track generator (active development)
+python src/multi_track_midi_generator.py example_lead.txt example_bass.txt example_pad.txt -o my_song.mid
+python src/multi_track_midi_generator.py example_lead.txt example_bass.txt --tempo 120
+python src/multi_track_midi_generator.py example_input.txt                # single-track mode
+
+# Original single-track generator
 python src/midi_generator.py
-
-# Run with a specific input file
 python src/midi_generator.py path/to/input.txt
-
-# Run with a specific input and output filename
 python src/midi_generator.py path/to/input.txt my_song.mid
 ```
 
@@ -58,17 +72,21 @@ python src/midi_generator.py path/to/input.txt my_song.mid
 
 ## Input File Format
 
-Text files with one bar per line, 4 notes per bar (space or comma separated). Optional first line for rhythm:
+Text files with one bar per line, 4 notes per bar (space or comma separated). Optional header lines for track settings:
 
 ```
-rhythm: 1, 1, 1, 1
+name: Lead Synth
+program: 81
+channel: 0
+velocity: 100
+rhythm: 1.5, 0.5, 0.5, 1.5
 C4 E4 G4 B4
 D4 F#4 A4 C5
 E4 G#4 B4 D5
 F4 A4 C5 E5
 ```
 
-Default rhythm if omitted: `1.5, 0.5, 0.5, 1.5` (syncopated pattern). Tempo is hardcoded at 110 BPM.
+All header lines are optional. Defaults: name from filename, program 80, auto channel, velocity 95, rhythm `1.5, 0.5, 0.5, 1.5`. Tempo default is 110 BPM (configurable via `--tempo`).
 
 ## Conventions
 
