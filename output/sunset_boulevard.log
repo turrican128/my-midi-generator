@@ -1,0 +1,30 @@
+=== Synthwave MIDI Generator - Log ===
+
+Output file : sunset_boulevard.mid
+Root key    : D
+Scale       : D major
+Vibe        : Energetic and uplifting
+Bars        : 8
+Total notes : 32
+Rhythm      : [1.5, 0.5, 0.5, 1.5]
+Pitch classes used: D, F#, G, A, B
+
+--- Notes per bar ---
+  Bar 1: D5 F#5 A5 D6
+  Bar 2: B4 D5 F#5 B5
+  Bar 3: G4 B4 D5 G5
+  Bar 4: A4 D5 F#5 A5
+  Bar 5: D5 A5 F#5 D5
+  Bar 6: B4 F#5 D5 B4
+  Bar 7: G4 D5 B4 G4
+  Bar 8: A4 F#5 D5 A4
+
+--- MIDI values ---
+  Bar 1: [74, 78, 81, 86]
+  Bar 2: [71, 74, 78, 83]
+  Bar 3: [67, 71, 74, 79]
+  Bar 4: [69, 74, 78, 81]
+  Bar 5: [74, 81, 78, 74]
+  Bar 6: [71, 78, 74, 71]
+  Bar 7: [67, 74, 71, 67]
+  Bar 8: [69, 78, 74, 69]
