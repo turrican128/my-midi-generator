@@ -1,0 +1,28 @@
+=== Synthwave Multi-Track MIDI Generator - Log ===
+
+Output file : example_input.mid
+Tempo       : 110 BPM
+Tracks      : 1
+Root key    : D
+Scale       : D major
+Vibe        : Energetic and uplifting
+Pitch classes used: D, F#, G, A, B
+
+--- Track 1: example_input ---
+  Source    : example_input.txt
+  Program   : 80
+  Channel   : 0
+  Velocity  : 95
+  Bars      : 8
+  Notes     : 32
+  Rhythm    : [1.5, 0.5, 0.5, 1.5]
+  Scale     : D major
+  Notes per bar:
+    Bar 1: D5 F#5 A5 D6
+    Bar 2: B4 D5 F#5 B5
+    Bar 3: G4 B4 D5 G5
+    Bar 4: A4 D5 F#5 A5
+    Bar 5: D5 A5 F#5 D5
+    Bar 6: B4 F#5 D5 B4
+    Bar 7: G4 D5 B4 G4
+    Bar 8: A4 F#5 D5 A4

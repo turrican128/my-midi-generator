@@ -1,0 +1,12 @@
+name: Synthwave Lead
+program: 81
+velocity: 100
+rhythm: 1.5, 0.5, 0.5, 1.5
+C5 Eb5 G5 C6
+Bb4 D5 F5 Bb5
+Ab4 C5 Eb5 Ab5
+Bb4 D5 G5 F5
+C5 G5 Eb5 C5
+Bb4 F5 D5 Bb4
+Ab4 Eb5 C5 Ab4
+Bb4 G4 D5 C5

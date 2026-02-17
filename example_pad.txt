@@ -1,0 +1,13 @@
+name: Ambient Pad
+program: 89
+channel: 2
+velocity: 70
+rhythm: 2, 2, 2, 2
+C4 Eb4 G4 C4
+Bb3 D4 F4 Bb3
+Ab3 C4 Eb4 Ab3
+Bb3 D4 F4 Bb3
+C4 Eb4 G4 C4
+Bb3 D4 F4 Bb3
+Ab3 C4 Eb4 Ab3
+Bb3 F4 D4 C4

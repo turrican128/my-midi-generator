@@ -1,0 +1,13 @@
+name: Synth Bass
+program: 38
+channel: 1
+velocity: 110
+rhythm: 1, 1, 1, 1
+C2 C2 C3 C2
+Bb1 Bb1 Bb2 Bb1
+Ab1 Ab1 Ab2 Ab1
+Bb1 Bb1 Bb2 Bb1
+C2 C2 C3 C2
+Bb1 Bb1 Bb2 Bb1
+Ab1 Ab1 Ab2 Ab1
+Bb1 Bb2 Bb1 C2
