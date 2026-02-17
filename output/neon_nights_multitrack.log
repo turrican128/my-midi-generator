@@ -1,0 +1,66 @@
+=== Synthwave Multi-Track MIDI Generator - Log ===
+
+Output file : neon_nights_multitrack.mid
+Tempo       : 118 BPM
+Tracks      : 3
+Root key    : A#
+Scale       : A# mixolydian
+Vibe        : Energetic and uplifting
+Pitch classes used: C, D, D#, F, G, G#, A#
+
+--- Track 1: Synthwave Lead ---
+  Source    : example_lead.txt
+  Program   : 81
+  Channel   : 0
+  Velocity  : 100
+  Bars      : 8
+  Notes     : 32
+  Rhythm    : [1.5, 0.5, 0.5, 1.5]
+  Scale     : C natural minor
+  Notes per bar:
+    Bar 1: C5 Eb5 G5 C6
+    Bar 2: Bb4 D5 F5 Bb5
+    Bar 3: Ab4 C5 Eb5 Ab5
+    Bar 4: Bb4 D5 G5 F5
+    Bar 5: C5 G5 Eb5 C5
+    Bar 6: Bb4 F5 D5 Bb4
+    Bar 7: Ab4 Eb5 C5 Ab4
+    Bar 8: Bb4 G4 D5 C5
+
+--- Track 2: Synth Bass ---
+  Source    : example_bass.txt
+  Program   : 38
+  Channel   : 1
+  Velocity  : 110
+  Bars      : 8
+  Notes     : 32
+  Rhythm    : [1.0, 1.0, 1.0, 1.0]
+  Scale     : C natural minor
+  Notes per bar:
+    Bar 1: C2 C2 C3 C2
+    Bar 2: Bb1 Bb1 Bb2 Bb1
+    Bar 3: Ab1 Ab1 Ab2 Ab1
+    Bar 4: Bb1 Bb1 Bb2 Bb1
+    Bar 5: C2 C2 C3 C2
+    Bar 6: Bb1 Bb1 Bb2 Bb1
+    Bar 7: Ab1 Ab1 Ab2 Ab1
+    Bar 8: Bb1 Bb2 Bb1 C2
+
+--- Track 3: Ambient Pad ---
+  Source    : example_pad.txt
+  Program   : 89
+  Channel   : 2
+  Velocity  : 70
+  Bars      : 8
+  Notes     : 32
+  Rhythm    : [2.0, 2.0, 2.0, 2.0]
+  Scale     : C natural minor
+  Notes per bar:
+    Bar 1: C4 Eb4 G4 C4
+    Bar 2: Bb3 D4 F4 Bb3
+    Bar 3: Ab3 C4 Eb4 Ab3
+    Bar 4: Bb3 D4 F4 Bb3
+    Bar 5: C4 Eb4 G4 C4
+    Bar 6: Bb3 D4 F4 Bb3
+    Bar 7: Ab3 C4 Eb4 Ab3
+    Bar 8: Bb3 F4 D4 C4
