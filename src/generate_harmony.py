@@ -122,6 +122,7 @@ def read_from_text(filepath):
         lines = [line.strip() for line in f if line.strip()]
 
     rhythm_pattern = [1.5, 0.5, 0.5, 1.5]
+    bpm = None
     note_lines = []
 
     for line in lines:
@@ -134,10 +135,9 @@ def read_from_text(filepath):
                 vals = [v for v in vals if v]
                 if len(vals) == 4:
                     rhythm_pattern = [float(v) for v in vals]
-            elif key in ('name', 'program', 'channel', 'velocity'):
-                pass  # ignored for harmony generation
-            else:
-                note_lines.append(line)
+            elif key == 'bpm':
+                bpm = int(value)
+            # all other headers (name, program, channel, velocity, unknown) are ignored
         else:
             note_lines.append(line)
 
@@ -145,7 +145,7 @@ def read_from_text(filepath):
         raise ValueError(f"{filepath}: Expected at least 4 bars, got {len(note_lines)}")
 
     ticks_per_beat = 480
-    tempo = 500000  # 120 BPM default
+    tempo = mido.bpm2tempo(bpm) if bpm else 500000  # default 120 BPM
 
     events = []
     abs_time = 0
@@ -222,7 +222,9 @@ def write_harmony_midi(events, scale_pcs, ticks_per_beat, tempo, output_path):
             harmony_note = active_harmony.pop(event['note'], harmonize_note(event['note'], scale_pcs))
             track.append(Message('note_off', note=harmony_note, velocity=0, channel=0, time=delta))
 
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    out_dir = os.path.dirname(output_path)
+    if out_dir:
+        os.makedirs(out_dir, exist_ok=True)
     mid.save(output_path)
     print(f"Done. Saved {output_path}")
 
