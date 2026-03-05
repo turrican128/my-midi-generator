@@ -96,6 +96,7 @@ All header lines are optional. Defaults: name from filename, program 80, auto ch
 - Do not add unnecessary comments, docstrings, or type annotations to unchanged code.
 - Output files go to `output/` directory.
 - Note format: standard notation with octave number (e.g. `C4`, `D#5`, `Bb3`). Octave range 0-9.
+- Chord format: wrap multiple notes in square brackets to play simultaneously (e.g. `[C4 E4 G4]`). Mix freely with single notes — each bar still needs 4 beats.
 
 ## Development Workflow
 

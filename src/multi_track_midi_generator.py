@@ -96,6 +96,35 @@ def midi_to_note_name(midi_note):
     return f"{name}{octave}"
 
 
+def parse_beats(line):
+    """
+    Parse a bar line into a list of 4 beats.
+    Each beat is a list of note strings.
+    Single note:  'C4'         -> ['C4']
+    Chord:        '[C4 E4 G4]' -> ['C4', 'E4', 'G4']
+    """
+    beats = []
+    i = 0
+    line = line.strip()
+    while i < len(line):
+        if line[i] == '[':
+            end = line.index(']', i)
+            notes = line[i+1:end].strip().split()
+            beats.append(notes)
+            i = end + 1
+        elif line[i] in (' ', ','):
+            i += 1
+        else:
+            j = i
+            while j < len(line) and line[j] not in (' ', ',', '[', ']'):
+                j += 1
+            token = line[i:j].strip()
+            if token:
+                beats.append([token])
+            i = j
+    return beats
+
+
 def parse_track_file(filepath, default_channel=0):
     """
     Read a track input file with optional header lines and note bars.
@@ -124,6 +153,7 @@ def parse_track_file(filepath, default_channel=0):
         'velocity': 95,
         'rhythm_pattern': None,
         'notes': [],
+        'beats': [],
         'note_names_per_bar': [],
         'num_bars': 0,
         'source_file': filepath,
@@ -165,15 +195,16 @@ def parse_track_file(filepath, default_channel=0):
 
     # Parse note bars
     for bar_num, line in enumerate(note_lines, 1):
-        notes = re.split(r'[,\s]+', line)
-        notes = [n for n in notes if n]
+        beats = parse_beats(line)
 
-        if len(notes) != 4:
-            raise ValueError(f"{filepath}, bar {bar_num}: Expected 4 notes, got {len(notes)}")
+        if len(beats) != 4:
+            raise ValueError(f"{filepath}, bar {bar_num}: Expected 4 beats, got {len(beats)}")
 
-        track_info['note_names_per_bar'].append(notes)
-        for note_str in notes:
-            track_info['notes'].append(note_to_midi(note_str))
+        track_info['note_names_per_bar'].append(beats)
+        track_info['beats'].append(beats)
+        for beat in beats:
+            for note_str in beat:
+                track_info['notes'].append(note_to_midi(note_str))
 
     track_info['num_bars'] = len(note_lines)
     return track_info
@@ -303,7 +334,11 @@ def write_log(tracks, output_filename, tempo):
 
             f.write(f"  Notes per bar:\n")
             for i, bar in enumerate(t['note_names_per_bar'], 1):
-                f.write(f"    Bar {i}: {' '.join(bar)}\n")
+                beats_str = ' '.join(
+                    f"[{' '.join(beat)}]" if len(beat) > 1 else beat[0]
+                    for beat in bar
+                )
+                f.write(f"    Bar {i}: {beats_str}\n")
 
     print(f"Log saved: {log_path}")
 
@@ -343,11 +378,15 @@ def create_multi_track_midi(tracks, output_filename, tempo=110):
         all_durations = rhythm * track_info['num_bars']
         velocity = track_info['velocity']
 
-        # Write notes
-        for note, dur in zip(track_info['notes'], all_durations):
+        # Write notes (single notes and chords)
+        flat_beats = [beat for bar in track_info['beats'] for beat in bar]
+        for beat, dur in zip(flat_beats, all_durations):
             ticks = int(dur * ticks_per_beat)
-            track.append(Message('note_on', note=note, velocity=velocity, channel=channel, time=0))
-            track.append(Message('note_off', note=note, velocity=0, channel=channel, time=ticks))
+            midi_notes = [note_to_midi(n) for n in beat]
+            for note in midi_notes:
+                track.append(Message('note_on', note=note, velocity=velocity, channel=channel, time=0))
+            for i, note in enumerate(midi_notes):
+                track.append(Message('note_off', note=note, velocity=0, channel=channel, time=ticks if i == 0 else 0))
 
     # Save
     os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -358,7 +397,7 @@ def create_multi_track_midi(tracks, output_filename, tempo=110):
 
 def parse_args(argv):
     """Parse command-line arguments."""
-    input_files = []
+    input_file = None
     output_file = None
     tempo = 110
 
@@ -380,58 +419,37 @@ def parse_args(argv):
                 print("Error: --tempo requires a value")
                 sys.exit(1)
         else:
-            input_files.append(arg)
+            input_file = arg
         i += 1
 
-    return input_files, output_file, tempo
+    return input_file, output_file, tempo
 
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        default_input = os.path.join(PROJECT_DIR, 'example_input.txt')
-        input_files = [default_input]
+        input_file = os.path.join(PROJECT_DIR, 'example_input.txt')
         output_file = None
         tempo = 110
     else:
-        input_files, output_file, tempo = parse_args(sys.argv[1:])
+        input_file, output_file, tempo = parse_args(sys.argv[1:])
 
-    if not input_files:
-        print("Usage: python multi_track_midi_generator.py track1.txt [track2.txt ...] [-o output.mid] [--tempo 120]")
+    if not input_file:
+        print("Usage: python multi_track_midi_generator.py track.txt [-o output.mid] [--tempo 120]")
         sys.exit(1)
 
-    # Default output name: derived from first input file
     if output_file is None:
-        base_name = os.path.splitext(os.path.basename(input_files[0]))[0]
-        if len(input_files) > 1:
-            output_file = f"{base_name}_multitrack.mid"
-        else:
-            output_file = f"{base_name}.mid"
+        base_name = os.path.splitext(os.path.basename(input_file))[0]
+        output_file = f"{base_name}.mid"
 
     try:
-        # Parse all track files
-        tracks = []
-        used_channels = set()
-
-        for idx, filepath in enumerate(input_files):
-            track = parse_track_file(filepath, default_channel=idx)
-
-            # Auto-assign channels to avoid conflicts (skip channel 9 — drums)
-            if track['channel'] in used_channels:
-                for ch in range(16):
-                    if ch != 9 and ch not in used_channels:
-                        track['channel'] = ch
-                        break
-            used_channels.add(track['channel'])
-
-            tracks.append(track)
-            rhythm_display = track['rhythm_pattern'] if track['rhythm_pattern'] else [1.5, 0.5, 0.5, 1.5]
-            print(f"Track {idx + 1}: '{track['name']}' | {len(track['notes'])} notes ({track['num_bars']} bars) "
-                  f"| ch:{track['channel']} prog:{track['program']} vel:{track['velocity']} "
-                  f"| rhythm: {rhythm_display}")
-
-        print(f"\nTempo: {tempo} BPM | Tracks: {len(tracks)}")
-        create_multi_track_midi(tracks, output_file, tempo)
-        write_log(tracks, output_file, tempo)
+        track = parse_track_file(input_file, default_channel=0)
+        rhythm_display = track['rhythm_pattern'] if track['rhythm_pattern'] else [1.5, 0.5, 0.5, 1.5]
+        print(f"Track: '{track['name']}' | {len(track['notes'])} notes ({track['num_bars']} bars) "
+              f"| ch:{track['channel']} prog:{track['program']} vel:{track['velocity']} "
+              f"| rhythm: {rhythm_display}")
+        print(f"\nTempo: {tempo} BPM")
+        create_multi_track_midi([track], output_file, tempo)
+        write_log([track], output_file, tempo)
 
     except (FileNotFoundError, ValueError) as e:
         print(f"Error: {e}")
