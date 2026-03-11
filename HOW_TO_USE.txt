@@ -1,0 +1,128 @@
+HOW TO USE - Synthwave MIDI Generator
+======================================
+
+SETUP (first time only)
+------------------------
+pip install mido
+
+
+BASIC COMMANDS
+--------------
+
+Single track:
+  py src/multi_track_midi_generator.py example_lead.txt
+
+Two tracks (lead + bass):
+  py src/multi_track_midi_generator.py example_lead.txt example_bass.txt
+
+Three tracks (lead + bass + pad):
+  py src/multi_track_midi_generator.py example_lead.txt example_bass.txt example_pad.txt
+
+Custom output filename:
+  py src/multi_track_midi_generator.py example_lead.txt example_bass.txt -o my_song.mid
+
+Custom tempo (default is 110 BPM):
+  py src/multi_track_midi_generator.py example_lead.txt example_bass.txt --tempo 120
+
+Combined options:
+  py src/multi_track_midi_generator.py example_lead.txt example_bass.txt -o my_song.mid --tempo 130
+
+
+OUTPUT
+------
+Generated files go to the output/ folder:
+  - output/my_song.mid   (the MIDI file)
+  - output/my_song.log   (scale/vibe analysis)
+
+
+INPUT FILE FORMAT
+-----------------
+Each .txt file = one instrument track.
+One bar per line, 4 notes per bar.
+
+Optional settings at the top of the file:
+  name: Lead Synth        (track label)
+  program: 81             (MIDI instrument number, 0-127)
+  channel: 0              (MIDI channel, 0-15)
+  velocity: 100           (volume, 0-127)
+  rhythm: 1.5, 0.5, 0.5, 1.5   (beat lengths per note in a bar)
+
+Example file:
+  name: Lead Synth
+  program: 81
+  velocity: 100
+  C4 E4 G4 B4
+  D4 F#4 A4 C5
+  E4 G4 B4 D5
+  F4 A4 C5 E5
+
+
+NOTE FORMAT
+-----------
+  C4, D#5, Bb3, G2, A#4, etc.
+  (note name + optional sharp/flat + octave 0-9)
+
+
+CHORD FORMAT
+------------
+  Wrap notes in square brackets to play them simultaneously:
+    [C4 E4 G4]         = C major chord
+    [A3 C4 E4]         = A minor chord
+
+  Mix chords and single notes freely — each bar still needs 4 beats:
+    [C4 E4 G4] B4 A4 G4
+    [A3 C4 E4] [G3 B3 D4] F4 E4
+
+
+HARMONY GENERATOR
+-----------------
+Generate a diatonic 3rd-above harmony track from a MIDI or text file.
+Outputs only the harmony as a new MIDI — original is untouched.
+
+  py src/generate_harmony.py input.mid --scale A minor
+  py src/generate_harmony.py input.txt --scale C major
+  py src/generate_harmony.py input.mid --scale A minor -o my_harmony.mid
+
+Supported scales:
+  major, minor, harmonic minor, dorian, mixolydian
+
+Output:
+  output/<input_name>_harmony.mid
+
+
+SCALE CONVERTER
+---------------
+Snap every note in a MIDI file to the nearest pitch in a chosen scale.
+Useful for transposing to a different key/mode or fixing out-of-scale notes.
+
+  py src/scale_converter.py lead.mid --scale D minor
+  py src/scale_converter.py lead.mid --scale G mixolydian -o output/lead_mix.mid
+  py src/scale_converter.py lead.mid --scale A "harmonic minor"
+  py src/scale_converter.py lead.mid --scale Bb major
+
+Snapping rules:
+  - Each note is mapped to the nearest scale pitch class (by semitone distance)
+  - Ties snap UP
+  - Result is clamped to MIDI range [0, 127]
+
+Output:
+  output/<input_name>_converted.mid   (the converted MIDI)
+  output/<input_name>_converted.log   (summary: notes snapped / total)
+
+Notes:
+  - Multi-track MIDI files are merged to a single track on output
+  - Timing, velocity, and tempo are preserved exactly
+  - Multi-word scale types require quoting: "harmonic minor"
+
+Supported scales:
+  major, minor, harmonic minor, dorian, mixolydian
+
+
+COMMON MIDI INSTRUMENT NUMBERS (program:)
+------------------------------------------
+  80  = Lead Synth (default)
+  81  = Sawtooth Lead
+  38  = Synth Bass
+  89  = Pad (warm)
+  91  = Pad (choir)
+  0   = Grand Piano
