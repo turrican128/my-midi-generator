@@ -90,6 +90,34 @@ Output:
   output/<input_name>_harmony.mid
 
 
+SCALE CONVERTER
+---------------
+Snap every note in a MIDI file to the nearest pitch in a chosen scale.
+Useful for transposing to a different key/mode or fixing out-of-scale notes.
+
+  py src/scale_converter.py lead.mid --scale D minor
+  py src/scale_converter.py lead.mid --scale G mixolydian -o output/lead_mix.mid
+  py src/scale_converter.py lead.mid --scale A "harmonic minor"
+  py src/scale_converter.py lead.mid --scale Bb major
+
+Snapping rules:
+  - Each note is mapped to the nearest scale pitch class (by semitone distance)
+  - Ties snap UP
+  - Result is clamped to MIDI range [0, 127]
+
+Output:
+  output/<input_name>_converted.mid   (the converted MIDI)
+  output/<input_name>_converted.log   (summary: notes snapped / total)
+
+Notes:
+  - Multi-track MIDI files are merged to a single track on output
+  - Timing, velocity, and tempo are preserved exactly
+  - Multi-word scale types require quoting: "harmonic minor"
+
+Supported scales:
+  major, minor, harmonic minor, dorian, mixolydian
+
+
 COMMON MIDI INSTRUMENT NUMBERS (program:)
 ------------------------------------------
   80  = Lead Synth (default)
