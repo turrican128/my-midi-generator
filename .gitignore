@@ -8,3 +8,9 @@ venv/
 # Python cache
 __pycache__/
 *.pyc
+
+# Generated output files
+output/
+
+# Claude settings
+.claude/
