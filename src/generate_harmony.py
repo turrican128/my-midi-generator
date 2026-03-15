@@ -5,9 +5,10 @@ Reads a MIDI file or text file and generates a diatonic 3rd-above harmony track.
 Outputs only the harmony as a new MIDI file — the original is untouched.
 
 Usage:
+    py src/generate_harmony.py input.mid
     py src/generate_harmony.py input.mid --scale A minor
     py src/generate_harmony.py input.txt --scale C major
-    py src/generate_harmony.py input.mid --scale A minor -o my_harmony.mid
+    py src/generate_harmony.py input.mid -o my_harmony.mid
 
 Output:
     output/<input_name>_harmony.mid
@@ -20,6 +21,7 @@ import os
 import sys
 import re
 import mido
+from collections import Counter
 from mido import Message, MidiFile, MidiTrack, MetaMessage
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -52,6 +54,58 @@ def build_scale(root, scale_type):
         raise ValueError(f"Unknown scale type: '{scale_type}'. Use: {', '.join(SCALE_INTERVALS)}")
     root_pc = NOTE_NAME_TO_PC[root]
     return sorted(set((root_pc + i) % 12 for i in SCALE_INTERVALS[scale_type]))
+
+
+DETECTED_TO_HARMONY_SCALE = {
+    'natural minor':    'minor',
+    'melodic minor':    'minor',
+    'pentatonic major': 'major',
+    'pentatonic minor': 'minor',
+}
+
+
+def detect_scale(midi_notes):
+    """Detect scale from note list. Returns (root_name, scale_type) mapped to harmony-supported types."""
+    note_names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+    pitch_classes = sorted(set(n % 12 for n in midi_notes))
+
+    scales = {
+        'major':          [0, 2, 4, 5, 7, 9, 11],
+        'minor':          [0, 2, 3, 5, 7, 8, 10],
+        'harmonic minor': [0, 2, 3, 5, 7, 8, 11],
+        'dorian':         [0, 2, 3, 5, 7, 9, 10],
+        'mixolydian':     [0, 2, 4, 5, 7, 9, 10],
+        'natural minor':  [0, 2, 3, 5, 7, 8, 10],
+        'melodic minor':  [0, 2, 3, 5, 7, 9, 11],
+        'pentatonic major': [0, 2, 4, 7, 9],
+        'pentatonic minor': [0, 3, 5, 7, 10],
+    }
+
+    first_pc = midi_notes[0] % 12
+    last_pc = midi_notes[-1] % 12
+    bar_starts = [midi_notes[i] % 12 for i in range(0, len(midi_notes), 4)]
+    pc_counts = Counter(n % 12 for n in midi_notes)
+    most_common_pc = pc_counts.most_common(1)[0][0]
+
+    best_root, best_scale, best_score = 0, 'major', -1
+
+    for root in range(12):
+        shifted = set((pc - root) % 12 for pc in pitch_classes)
+        for scale_name, intervals in scales.items():
+            scale_set = set(intervals)
+            score = len(shifted & scale_set) - len(shifted - scale_set) * 2
+            if root == first_pc: score += 3
+            if root == last_pc:  score += 2
+            if root == most_common_pc: score += 1
+            score += sum(1 for bp in bar_starts if bp == root)
+            if score > best_score:
+                best_score = score
+                best_root = root
+                best_scale = scale_name
+
+    root_name = note_names[best_root]
+    scale_type = DETECTED_TO_HARMONY_SCALE.get(best_scale, best_scale)
+    return root_name, scale_type
 
 
 def harmonize_note(midi_note, scale_pcs):
@@ -261,18 +315,15 @@ def parse_args(argv):
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print("Usage: py src/generate_harmony.py input.mid --scale A minor")
-        print("       py src/generate_harmony.py input.txt --scale C major")
-        print("       py src/generate_harmony.py input.mid --scale A minor -o harmony.mid")
+        print("Usage: py src/generate_harmony.py input.mid [--scale A minor]")
+        print("       py src/generate_harmony.py input.txt [--scale C major]")
+        print("       py src/generate_harmony.py input.mid -o harmony.mid")
         sys.exit(1)
 
     input_path, scale_root, scale_type, output_path = parse_args(sys.argv[1:])
 
     if not input_path:
         print("Error: no input file provided")
-        sys.exit(1)
-    if not scale_root or not scale_type:
-        print("Error: --scale is required. Example: --scale A minor")
         sys.exit(1)
     if not os.path.exists(input_path):
         print(f"Error: file not found: {input_path}")
@@ -282,11 +333,9 @@ if __name__ == '__main__':
         base = os.path.splitext(os.path.basename(input_path))[0]
         output_path = os.path.join(OUTPUT_DIR, f"{base}_harmony.mid")
 
-    try:
-        scale_pcs = build_scale(scale_root, scale_type)
-        print(f"Scale: {scale_root} {scale_type} -> {scale_pcs}")
+    ext = os.path.splitext(input_path)[1].lower()
 
-        ext = os.path.splitext(input_path)[1].lower()
+    try:
         if ext in ('.mid', '.midi'):
             events, ticks_per_beat, tempo = read_from_midi(input_path)
         elif ext == '.txt':
@@ -294,6 +343,17 @@ if __name__ == '__main__':
         else:
             print(f"Error: unsupported file type '{ext}'. Use .mid or .txt")
             sys.exit(1)
+
+        if not scale_root or not scale_type:
+            note_list = [e['note'] for e in events if e['type'] == 'note_on']
+            if not note_list:
+                print("Error: no notes found — cannot auto-detect scale. Use --scale.")
+                sys.exit(1)
+            scale_root, scale_type = detect_scale(note_list)
+            print(f"Auto-detected scale: {scale_root} {scale_type}")
+
+        scale_pcs = build_scale(scale_root, scale_type)
+        print(f"Scale: {scale_root} {scale_type} -> {scale_pcs}")
 
         note_count = sum(1 for e in events if e['type'] == 'note_on')
         print(f"Read {note_count} notes from {input_path}")
