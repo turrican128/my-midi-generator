@@ -13,8 +13,7 @@ Usage:
 Output:
     output/<input_name>_harmony.mid
 
-Supported scales:
-    major, minor, harmonic minor, dorian, mixolydian
+Supported scale types: major, minor, harmonic minor, dorian, mixolydian
 """
 
 import os
@@ -57,7 +56,6 @@ def build_scale(root, scale_type):
 
 
 DETECTED_TO_HARMONY_SCALE = {
-    'natural minor':    'minor',
     'melodic minor':    'minor',
     'pentatonic major': 'major',
     'pentatonic minor': 'minor',
@@ -69,17 +67,12 @@ def detect_scale(midi_notes):
     note_names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
     pitch_classes = sorted(set(n % 12 for n in midi_notes))
 
-    scales = {
-        'major':          [0, 2, 4, 5, 7, 9, 11],
-        'minor':          [0, 2, 3, 5, 7, 8, 10],
-        'harmonic minor': [0, 2, 3, 5, 7, 8, 11],
-        'dorian':         [0, 2, 3, 5, 7, 9, 10],
-        'mixolydian':     [0, 2, 4, 5, 7, 9, 10],
-        'natural minor':  [0, 2, 3, 5, 7, 8, 10],
-        'melodic minor':  [0, 2, 3, 5, 7, 9, 11],
+    scales = dict(SCALE_INTERVALS)
+    scales.update({
+        'melodic minor':    [0, 2, 3, 5, 7, 9, 11],
         'pentatonic major': [0, 2, 4, 7, 9],
         'pentatonic minor': [0, 3, 5, 7, 10],
-    }
+    })
 
     first_pc = midi_notes[0] % 12
     last_pc = midi_notes[-1] % 12
@@ -87,7 +80,7 @@ def detect_scale(midi_notes):
     pc_counts = Counter(n % 12 for n in midi_notes)
     most_common_pc = pc_counts.most_common(1)[0][0]
 
-    best_root, best_scale, best_score = 0, 'major', -1
+    best_root, best_scale, best_score = 0, 'major', float('-inf')
 
     for root in range(12):
         shifted = set((pc - root) % 12 for pc in pitch_classes)
