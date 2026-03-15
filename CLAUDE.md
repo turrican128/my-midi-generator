@@ -11,11 +11,8 @@ my-midi-generator/
 ├── src/
 │   ├── __init__.py                    # Package init
 │   ├── multi_track_midi_generator.py  # Multi-track generator ← active development
-│   ├── midi_generator.py              # Original single-track generator
-│   ├── midi gen 2.py                  # Standalone bass line generator (uses midiutil)
-│   └── midi gen grok.py              # Standalone melodic lead generator (uses midiutil)
-├── backup/
-│   └── note01.py                      # Earlier standalone nightrun melody generator (uses mido)
+│   ├── generate_harmony.py            # Harmony generator (diatonic 3rd above)
+│   └── scale_converter.py            # Snap MIDI notes to a target scale
 ├── output/                            # Generated .mid and .log files go here
 ├── main.py                            # PyCharm placeholder (not used for MIDI generation)
 ├── example_input.txt                  # Sample input: 8-bar D major melody
@@ -28,25 +25,13 @@ my-midi-generator/
 
 ### Key file: `src/multi_track_midi_generator.py`
 
-The multi-track generator. Builds on all features of `midi_generator.py` and adds:
+The main generator. Reads notes from text files and outputs `.mid` + `.log` files:
 - Multiple tracks in a single MIDI file (lead, bass, pad, etc.)
 - Per-track settings: name, program (instrument), channel, velocity
 - Configurable tempo via `--tempo` flag
 - Auto-assigns MIDI channels to avoid conflicts (skips channel 9/drums)
 - Backward compatible — works with single input files too
-
-### Original: `src/midi_generator.py`
-
-The original single-track generator. It:
-- Reads notes from a text file (4 notes per bar, minimum 4 bars)
-- Supports an optional `rhythm:` line for custom rhythm patterns
-- Converts note names to MIDI numbers
-- Detects scale (major, minor, dorian, etc.) and mood/vibe
-- Outputs a `.mid` file and a `.log` file to `output/`
-
-### Standalone scripts (`src/midi gen 2.py`, `src/midi gen grok.py`, `backup/note01.py`)
-
-Earlier experiments with hardcoded note sequences. They use either `mido` or `midiutil` directly and don't read from text files.
+- Detects scale (major, minor, dorian, etc.) and mood/vibe per track
 
 ## Commands
 
@@ -59,16 +44,11 @@ python src/multi_track_midi_generator.py example_lead.txt example_bass.txt examp
 python src/multi_track_midi_generator.py example_lead.txt example_bass.txt --tempo 120
 python src/multi_track_midi_generator.py example_input.txt                # single-track mode
 
-# Original single-track generator
-python src/midi_generator.py
-python src/midi_generator.py path/to/input.txt
-python src/midi_generator.py path/to/input.txt my_song.mid
 ```
 
 ## Dependencies
 
-- **mido** (`>=1.2.10`) — used by `src/midi_generator.py` and `backup/note01.py`
-- **midiutil** — used by the standalone scripts in `src/midi gen 2.py` and `src/midi gen grok.py` (not in requirements.txt)
+- **mido** (`>=1.2.10`) — used by all generators and tools
 
 ## Input File Format
 
