@@ -14,3 +14,9 @@ output/
 
 # Claude settings
 .claude/
+
+# Local track files (not part of the project)
+80s_melodic_lead.txt
+Aminor_lead.txt
+chord_test.txt
+my_lead_test00.txt
