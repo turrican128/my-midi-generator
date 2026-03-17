@@ -19,6 +19,7 @@ Supported scale types: major, minor, harmonic minor, dorian, mixolydian
 import os
 import sys
 import re
+import random
 import mido
 from collections import Counter
 from mido import Message, MidiFile, MidiTrack, MetaMessage
@@ -101,7 +102,7 @@ def detect_scale(midi_notes):
     return root_name, scale_type
 
 
-HARMONY_INTERVALS = [-5, -2, 2, 5]  # 6th below, 3rd below, 3rd above, 6th above
+HARMONY_INTERVALS = [-5, -3, -2]  # 6th below, 4th below, 3rd below
 
 
 def harmonize_note(midi_note, scale_pcs, prev_melody=None, prev_harmony=None):
@@ -121,7 +122,7 @@ def harmonize_note(midi_note, scale_pcs, prev_melody=None, prev_harmony=None):
         h_note = base_octave + h_pc + octave_shift * 12
         candidates.append(max(0, min(127, h_note)))
 
-    # No history: default to 3rd above
+    # No history: default to 3rd below
     if prev_melody is None or prev_harmony is None:
         return candidates[2]
 
@@ -136,7 +137,8 @@ def harmonize_note(midi_note, scale_pcs, prev_melody=None, prev_harmony=None):
             elif h_dir == 0:          score += 1   # oblique
             else:                     score -= 1   # similar motion
         score -= abs(h_note - prev_harmony) / 12   # smooth voice leading
-        if i in (0, 3):               score += 0.5  # prefer 6ths
+        if i == 0:                    score += 0.5  # prefer 6th below
+        score += random.uniform(-0.8, 0.8)          # slight variation per run
         if score > best_score:
             best_score, best = score, h_note
 
@@ -269,8 +271,35 @@ def read_from_midi(filepath):
     return events, ticks_per_beat, tempo
 
 
+def keep_lowest_per_tick(events):
+    """For each tick with simultaneous note_ons, keep only the lowest. Drops others + their note_offs."""
+    lowest_by_tick = {}
+    for e in events:
+        if e['type'] == 'note_on':
+            t = e['time']
+            if t not in lowest_by_tick or e['note'] < lowest_by_tick[t]['note']:
+                lowest_by_tick[t] = e
+
+    kept = {(t, e['note']) for t, e in lowest_by_tick.items()}
+    pending_removal = set()
+    result = []
+    for e in events:
+        if e['type'] == 'note_on':
+            if (e['time'], e['note']) in kept:
+                result.append(e)
+            else:
+                pending_removal.add(e['note'])
+        elif e['type'] == 'note_off':
+            if e['note'] in pending_removal:
+                pending_removal.discard(e['note'])
+            else:
+                result.append(e)
+    return result
+
+
 def write_harmony_midi(events, scale_pcs, ticks_per_beat, tempo, output_path):
     """Write a new MIDI file with all notes harmonized a diatonic 3rd above."""
+    events = keep_lowest_per_tick(events)
     mid = MidiFile()
     mid.ticks_per_beat = ticks_per_beat
 
