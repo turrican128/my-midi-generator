@@ -101,21 +101,46 @@ def detect_scale(midi_notes):
     return root_name, scale_type
 
 
-def harmonize_note(midi_note, scale_pcs):
-    pc = midi_note % 12
+HARMONY_INTERVALS = [-5, -2, 2, 5]  # 6th below, 3rd below, 3rd above, 6th above
 
+
+def harmonize_note(midi_note, scale_pcs, prev_melody=None, prev_harmony=None):
+    pc = midi_note % 12
     if pc not in scale_pcs:
         pc = min(scale_pcs, key=lambda s: min(abs(s - pc), 12 - abs(s - pc)))
 
     idx = scale_pcs.index(pc)
-    harmony_idx = idx + 2  # diatonic 3rd = 2 scale degrees up
-
-    octave_shift = harmony_idx // len(scale_pcs)
-    harmony_pc = scale_pcs[harmony_idx % len(scale_pcs)]
-
+    n = len(scale_pcs)
     base_octave = (midi_note // 12) * 12
-    harmony_note = base_octave + harmony_pc + (octave_shift * 12)
-    return max(0, min(127, harmony_note))
+
+    candidates = []
+    for interval in HARMONY_INTERVALS:
+        h_idx = idx + interval
+        octave_shift = h_idx // n
+        h_pc = scale_pcs[h_idx % n]
+        h_note = base_octave + h_pc + octave_shift * 12
+        candidates.append(max(0, min(127, h_note)))
+
+    # No history: default to 3rd above
+    if prev_melody is None or prev_harmony is None:
+        return candidates[2]
+
+    melody_dir = 1 if midi_note > prev_melody else (-1 if midi_note < prev_melody else 0)
+
+    best, best_score = candidates[2], float('-inf')
+    for i, h_note in enumerate(candidates):
+        h_dir = 1 if h_note > prev_harmony else (-1 if h_note < prev_harmony else 0)
+        score = 0
+        if melody_dir != 0:
+            if h_dir == -melody_dir:  score += 3   # contrary motion
+            elif h_dir == 0:          score += 1   # oblique
+            else:                     score -= 1   # similar motion
+        score -= abs(h_note - prev_harmony) / 12   # smooth voice leading
+        if i in (0, 3):               score += 0.5  # prefer 6ths
+        if score > best_score:
+            best_score, best = score, h_note
+
+    return best
 
 
 def note_str_to_midi(note_str):
@@ -256,14 +281,18 @@ def write_harmony_midi(events, scale_pcs, ticks_per_beat, tempo, output_path):
 
     active_harmony = {}  # original note -> harmony note (to match note_off correctly)
     prev_abs = 0
+    prev_melody = None
+    prev_harmony = None
 
     for event in events:
         delta = event['time'] - prev_abs
         prev_abs = event['time']
 
         if event['type'] == 'note_on':
-            harmony_note = harmonize_note(event['note'], scale_pcs)
+            harmony_note = harmonize_note(event['note'], scale_pcs, prev_melody, prev_harmony)
             active_harmony[event['note']] = harmony_note
+            prev_melody = event['note']
+            prev_harmony = harmony_note
             track.append(Message('note_on', note=harmony_note, velocity=event['velocity'], channel=0, time=delta))
         elif event['type'] == 'note_off':
             harmony_note = active_harmony.pop(event['note'], harmonize_note(event['note'], scale_pcs))
