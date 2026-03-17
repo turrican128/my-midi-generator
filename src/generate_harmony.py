@@ -1,7 +1,7 @@
 """
 Harmony Generator - Synthwave MIDI Generator
 
-Reads a MIDI file or text file and generates a diatonic 3rd-above harmony track.
+Reads a MIDI file or text file and generates a harmony track.
 Outputs only the harmony as a new MIDI file — the original is untouched.
 
 Usage:
@@ -9,11 +9,13 @@ Usage:
     py src/generate_harmony.py input.mid --scale A minor
     py src/generate_harmony.py input.txt --scale C major
     py src/generate_harmony.py input.mid -o my_harmony.mid
+    py src/generate_harmony.py input.mid --preset synthwave
 
 Output:
     output/<input_name>_harmony.mid
 
 Supported scale types: major, minor, harmonic minor, dorian, mixolydian
+Supported presets: default, romantic, 80s, synthwave
 """
 
 import os
@@ -102,10 +104,51 @@ def detect_scale(midi_notes):
     return root_name, scale_type
 
 
-HARMONY_INTERVALS = [-5, -3, -2]  # 6th below, 4th below, 3rd below
+PRESETS = {
+    'default': {
+        'intervals':       [-5, -3, -2],  # 6th, 4th, 3rd below
+        'contrary_bonus':  3,
+        'oblique_bonus':   1,
+        'similar_penalty': 1,
+        'smoothness':      0.08,
+        'prefer_idx':      2,             # prefer 3rd when no history
+        'randomness':      0.8,
+        'hold_prob':       0.0,           # probability of holding previous note
+    },
+    'romantic': {
+        'intervals':       [-5, -2],      # 6th, 3rd below — lush, smooth
+        'contrary_bonus':  2,
+        'oblique_bonus':   1.5,
+        'similar_penalty': 0.5,
+        'smoothness':      0.12,
+        'prefer_idx':      1,             # prefer 3rd (index 1)
+        'randomness':      0.3,
+        'hold_prob':       0.2,           # hold ~1 in 5 notes for a legato feel
+    },
+    '80s': {
+        'intervals':       [-4, -2],      # 5th, 3rd below — power + warmth
+        'contrary_bonus':  3,
+        'oblique_bonus':   1,
+        'similar_penalty': 1,
+        'smoothness':      0.07,
+        'prefer_idx':      1,             # prefer 3rd (index 1)
+        'randomness':      0.6,
+        'hold_prob':       0.15,
+    },
+    'synthwave': {
+        'intervals':       [-5, -3, -2],  # 6th, 4th, 3rd below — wide, electronic
+        'contrary_bonus':  4,
+        'oblique_bonus':   1,
+        'similar_penalty': 2,
+        'smoothness':      0.08,
+        'prefer_idx':      0,             # prefer 6th (index 0) for wide sound
+        'randomness':      1.2,
+        'hold_prob':       0.25,          # hold ~1 in 4 for an independent counter-melody feel
+    },
+}
 
 
-def harmonize_note(midi_note, scale_pcs, prev_melody=None, prev_harmony=None):
+def harmonize_note(midi_note, scale_pcs, preset_cfg, prev_melody=None, prev_harmony=None):
     pc = midi_note % 12
     if pc not in scale_pcs:
         pc = min(scale_pcs, key=lambda s: min(abs(s - pc), 12 - abs(s - pc)))
@@ -115,30 +158,32 @@ def harmonize_note(midi_note, scale_pcs, prev_melody=None, prev_harmony=None):
     base_octave = (midi_note // 12) * 12
 
     candidates = []
-    for interval in HARMONY_INTERVALS:
+    for interval in preset_cfg['intervals']:
         h_idx = idx + interval
         octave_shift = h_idx // n
         h_pc = scale_pcs[h_idx % n]
         h_note = base_octave + h_pc + octave_shift * 12
         candidates.append(max(0, min(127, h_note)))
 
-    # No history: default to 3rd below
     if prev_melody is None or prev_harmony is None:
-        return candidates[2]
+        return candidates[preset_cfg['prefer_idx']]
+
+    if preset_cfg['hold_prob'] > 0 and random.random() < preset_cfg['hold_prob']:
+        return prev_harmony
 
     melody_dir = 1 if midi_note > prev_melody else (-1 if midi_note < prev_melody else 0)
 
-    best, best_score = candidates[2], float('-inf')
+    best, best_score = candidates[preset_cfg['prefer_idx']], float('-inf')
     for i, h_note in enumerate(candidates):
         h_dir = 1 if h_note > prev_harmony else (-1 if h_note < prev_harmony else 0)
         score = 0
         if melody_dir != 0:
-            if h_dir == -melody_dir:  score += 3   # contrary motion
-            elif h_dir == 0:          score += 1   # oblique
-            else:                     score -= 1   # similar motion
-        score -= abs(h_note - prev_harmony) / 12   # smooth voice leading
-        if i == 0:                    score += 0.5  # prefer 6th below
-        score += random.uniform(-0.8, 0.8)          # slight variation per run
+            if h_dir == -melody_dir:  score += preset_cfg['contrary_bonus']
+            elif h_dir == 0:          score += preset_cfg['oblique_bonus']
+            else:                     score -= preset_cfg['similar_penalty']
+        score -= preset_cfg['smoothness'] * abs(h_note - prev_harmony)
+        if i == preset_cfg['prefer_idx']: score += 0.5
+        score += random.uniform(-preset_cfg['randomness'], preset_cfg['randomness'])
         if score > best_score:
             best_score, best = score, h_note
 
@@ -297,8 +342,7 @@ def keep_lowest_per_tick(events):
     return result
 
 
-def write_harmony_midi(events, scale_pcs, ticks_per_beat, tempo, output_path):
-    """Write a new MIDI file with all notes harmonized a diatonic 3rd above."""
+def write_harmony_midi(events, scale_pcs, ticks_per_beat, tempo, output_path, preset_cfg):
     events = keep_lowest_per_tick(events)
     mid = MidiFile()
     mid.ticks_per_beat = ticks_per_beat
@@ -308,7 +352,7 @@ def write_harmony_midi(events, scale_pcs, ticks_per_beat, tempo, output_path):
     track.append(MetaMessage('set_tempo', tempo=tempo, time=0))
     track.append(MetaMessage('track_name', name='Harmony', time=0))
 
-    active_harmony = {}  # original note -> harmony note (to match note_off correctly)
+    active_harmony = {}
     prev_abs = 0
     prev_melody = None
     prev_harmony = None
@@ -318,14 +362,28 @@ def write_harmony_midi(events, scale_pcs, ticks_per_beat, tempo, output_path):
         prev_abs = event['time']
 
         if event['type'] == 'note_on':
-            harmony_note = harmonize_note(event['note'], scale_pcs, prev_melody, prev_harmony)
-            active_harmony[event['note']] = harmony_note
+            harmony_note = harmonize_note(event['note'], scale_pcs, preset_cfg, prev_melody, prev_harmony)
+
+            # If this harmony pitch is already active, re-key silently (smooth legato tie, no re-trigger)
+            prev_active_key = next((k for k, v in active_harmony.items() if v == harmony_note), None)
+            if prev_active_key is not None:
+                del active_harmony[prev_active_key]
+                active_harmony[event['note']] = harmony_note
+            else:
+                # Close any still-active harmony notes (strict monophony)
+                for orig_note, h_note in list(active_harmony.items()):
+                    track.append(Message('note_off', note=h_note, velocity=0, channel=0, time=delta))
+                    delta = 0
+                    del active_harmony[orig_note]
+                track.append(Message('note_on', note=harmony_note, velocity=event['velocity'], channel=0, time=delta))
+                active_harmony[event['note']] = harmony_note
+
             prev_melody = event['note']
             prev_harmony = harmony_note
-            track.append(Message('note_on', note=harmony_note, velocity=event['velocity'], channel=0, time=delta))
         elif event['type'] == 'note_off':
-            harmony_note = active_harmony.pop(event['note'], harmonize_note(event['note'], scale_pcs))
-            track.append(Message('note_off', note=harmony_note, velocity=0, channel=0, time=delta))
+            if event['note'] in active_harmony:
+                harmony_note = active_harmony.pop(event['note'])
+                track.append(Message('note_off', note=harmony_note, velocity=0, channel=0, time=delta))
 
     out_dir = os.path.dirname(output_path)
     if out_dir:
@@ -339,6 +397,7 @@ def parse_args(argv):
     output_path = None
     scale_root = None
     scale_type_parts = []
+    preset_name = 'default'
 
     i = 0
     while i < len(argv):
@@ -348,10 +407,17 @@ def parse_args(argv):
             if i < len(argv):
                 scale_root = argv[i]
             i += 1
-            # Collect remaining scale type words (e.g. "harmonic minor" = 2 words)
             while i < len(argv) and not argv[i].startswith('-'):
                 scale_type_parts.append(argv[i])
                 i += 1
+        elif arg == '--preset':
+            i += 1
+            if i < len(argv):
+                preset_name = argv[i]
+                i += 1
+            else:
+                print("Error: --preset requires a value")
+                sys.exit(1)
         elif arg in ('-o', '--output'):
             i += 1
             output_path = argv[i]
@@ -361,17 +427,18 @@ def parse_args(argv):
             i += 1
 
     scale_type = ' '.join(scale_type_parts) if scale_type_parts else None
-    return input_path, scale_root, scale_type, output_path
+    return input_path, scale_root, scale_type, output_path, preset_name
 
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print("Usage: py src/generate_harmony.py input.mid [--scale A minor]")
+        print("Usage: py src/generate_harmony.py input.mid [--scale A minor] [--preset synthwave]")
         print("       py src/generate_harmony.py input.txt [--scale C major]")
         print("       py src/generate_harmony.py input.mid -o harmony.mid")
+        print(f"       Presets: {', '.join(PRESETS)}")
         sys.exit(1)
 
-    input_path, scale_root, scale_type, output_path = parse_args(sys.argv[1:])
+    input_path, scale_root, scale_type, output_path, preset_name = parse_args(sys.argv[1:])
 
     if not input_path:
         print("Error: no input file provided")
@@ -379,6 +446,10 @@ if __name__ == '__main__':
     if not os.path.exists(input_path):
         print(f"Error: file not found: {input_path}")
         sys.exit(1)
+    if preset_name not in PRESETS:
+        print(f"Error: unknown preset '{preset_name}'. Available: {', '.join(PRESETS)}")
+        sys.exit(1)
+    preset_cfg = PRESETS[preset_name]
 
     if output_path is None:
         base = os.path.splitext(os.path.basename(input_path))[0]
@@ -405,11 +476,12 @@ if __name__ == '__main__':
 
         scale_pcs = build_scale(scale_root, scale_type)
         print(f"Scale: {scale_root} {scale_type} -> {scale_pcs}")
+        print(f"Preset: {preset_name}")
 
         note_count = sum(1 for e in events if e['type'] == 'note_on')
         print(f"Read {note_count} notes from {input_path}")
 
-        write_harmony_midi(events, scale_pcs, ticks_per_beat, tempo, output_path)
+        write_harmony_midi(events, scale_pcs, ticks_per_beat, tempo, output_path, preset_cfg)
 
     except (ValueError, OSError) as e:
         print(f"Error: {e}")
