@@ -362,17 +362,24 @@ def write_harmony_midi(events, scale_pcs, ticks_per_beat, tempo, output_path, pr
         prev_abs = event['time']
 
         if event['type'] == 'note_on':
-            # Close any still-active harmony notes before starting a new one (strict monophony)
-            for orig_note, h_note in list(active_harmony.items()):
-                track.append(Message('note_off', note=h_note, velocity=0, channel=0, time=delta))
-                delta = 0
-                del active_harmony[orig_note]
-
             harmony_note = harmonize_note(event['note'], scale_pcs, preset_cfg, prev_melody, prev_harmony)
-            active_harmony[event['note']] = harmony_note
+
+            # If this harmony pitch is already active, re-key silently (smooth legato tie, no re-trigger)
+            prev_active_key = next((k for k, v in active_harmony.items() if v == harmony_note), None)
+            if prev_active_key is not None:
+                del active_harmony[prev_active_key]
+                active_harmony[event['note']] = harmony_note
+            else:
+                # Close any still-active harmony notes (strict monophony)
+                for orig_note, h_note in list(active_harmony.items()):
+                    track.append(Message('note_off', note=h_note, velocity=0, channel=0, time=delta))
+                    delta = 0
+                    del active_harmony[orig_note]
+                track.append(Message('note_on', note=harmony_note, velocity=event['velocity'], channel=0, time=delta))
+                active_harmony[event['note']] = harmony_note
+
             prev_melody = event['note']
             prev_harmony = harmony_note
-            track.append(Message('note_on', note=harmony_note, velocity=event['velocity'], channel=0, time=delta))
         elif event['type'] == 'note_off':
             if event['note'] in active_harmony:
                 harmony_note = active_harmony.pop(event['note'])
@@ -407,7 +414,10 @@ def parse_args(argv):
             i += 1
             if i < len(argv):
                 preset_name = argv[i]
-            i += 1
+                i += 1
+            else:
+                print("Error: --preset requires a value")
+                sys.exit(1)
         elif arg in ('-o', '--output'):
             i += 1
             output_path = argv[i]
