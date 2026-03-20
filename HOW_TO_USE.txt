@@ -1,3 +1,29 @@
+═══════════════════════════════════════════════════════════
+  WEB UI (Recommended)
+═══════════════════════════════════════════════════════════
+
+1. Install dependencies (first time only):
+   pip install -r requirements.txt
+
+2. Start the web server from the project root:
+   python web/app.py
+
+3. Open your browser:
+   http://localhost:5000
+
+4. Use the tabs to select a tool:
+   - GENERATE HARMONY  : drag a .txt or .mid file
+   - MULTI-TRACK MIDI  : drag a .txt file
+   - SCALE CONVERTER   : drag a .mid file
+
+5. Set options and click the GENERATE button.
+
+6. Download the output file(s) from the OUTPUT FILES section.
+
+Output files are also saved to the output/ folder.
+
+═══════════════════════════════════════════════════════════
+
 HOW TO USE - Synthwave MIDI Generator
 ======================================
 
@@ -76,15 +102,26 @@ CHORD FORMAT
 
 HARMONY GENERATOR
 -----------------
-Generate a diatonic 3rd-above harmony track from a MIDI or text file.
+Generate a harmony track from a MIDI or text file.
 Outputs only the harmony as a new MIDI — original is untouched.
+Always one note at a time (no chords), always below the lead.
 
+  py src/generate_harmony.py input.mid
   py src/generate_harmony.py input.mid --scale A minor
   py src/generate_harmony.py input.txt --scale C major
-  py src/generate_harmony.py input.mid --scale A minor -o my_harmony.mid
+  py src/generate_harmony.py input.mid --preset synthwave
+  py src/generate_harmony.py input.mid --preset romantic -o my_harmony.mid
+
+Scale is auto-detected if --scale is omitted.
 
 Supported scales:
   major, minor, harmonic minor, dorian, mixolydian
+
+Style presets (--preset):
+  default    — balanced mix of 3rds, 4ths, 6ths below; moderate variation
+  romantic   — smooth 3rds and 6ths, low randomness, occasional held notes
+  80s        — punchy 3rds and 5ths, strong contrary motion
+  synthwave  — wide 6ths/4ths/3rds, high randomness, independent counter-melody feel
 
 Output:
   output/<input_name>_harmony.mid
