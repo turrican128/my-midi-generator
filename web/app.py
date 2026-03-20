@@ -36,6 +36,8 @@ def run_harmony():
     f = request.files.get('file')
     if not f:
         return jsonify({'error': 'No file uploaded'}), 400
+    if not f.filename:
+        return jsonify({'error': 'Uploaded file has no filename'}), 400
 
     preset = request.form.get('preset', 'synthwave')
     root = request.form.get('root', 'C')
@@ -76,11 +78,13 @@ def run_multitrack():
     f = request.files.get('file')
     if not f:
         return jsonify({'error': 'No file uploaded'}), 400
+    if not f.filename:
+        return jsonify({'error': 'Uploaded file has no filename'}), 400
 
     try:
         tempo = int(request.form.get('tempo', 110))
-        if not (40 <= tempo <= 300):
-            return jsonify({'error': 'Tempo must be between 40 and 300'}), 400
+        if not (60 <= tempo <= 200):
+            return jsonify({'error': 'Tempo must be between 60 and 200'}), 400
     except ValueError:
         return jsonify({'error': 'Invalid tempo value'}), 400
 
@@ -116,6 +120,8 @@ def run_scale():
     f = request.files.get('file')
     if not f:
         return jsonify({'error': 'No file uploaded'}), 400
+    if not f.filename:
+        return jsonify({'error': 'Uploaded file has no filename'}), 400
 
     root = request.form.get('root', 'C')
     scale_type = request.form.get('scale_type', 'minor')
@@ -151,4 +157,4 @@ def run_scale():
         tmp_path.unlink(missing_ok=True)
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=5000)  # local-only; never expose to a network
