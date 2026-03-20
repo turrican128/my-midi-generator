@@ -1,9 +1,13 @@
 // ── Tab switching ──────────────────────────────────────────────────────────
 document.querySelectorAll('.tab').forEach(tab => {
   tab.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => {
+      t.classList.remove('active');
+      t.textContent = t.textContent.replace('◉', '○');
+    });
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
     tab.classList.add('active');
+    tab.textContent = tab.textContent.replace('○', '◉');
     document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
   });
 });
@@ -39,7 +43,9 @@ document.querySelectorAll('.drop-zone').forEach(zone => {
     e.preventDefault();
     zone.classList.add('drag-over');
   });
-  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('dragleave', e => {
+    if (!zone.contains(e.relatedTarget)) zone.classList.remove('drag-over');
+  });
   zone.addEventListener('drop', e => {
     e.preventDefault();
     zone.classList.remove('drag-over');
@@ -83,10 +89,6 @@ document.querySelectorAll('.gen-btn').forEach(btn => {
     panel.querySelectorAll('select[name], input[name]').forEach(el => {
       fd.append(el.name, el.value);
     });
-    // Tempo from slider (no name attribute on slider)
-    if (route === '/run/multitrack') {
-      fd.append('tempo', tempoSlider.value);
-    }
 
     // Loading state
     const orig = btn.textContent;
@@ -108,10 +110,16 @@ document.querySelectorAll('.gen-btn').forEach(btn => {
       data.files.forEach(fname => {
         const item = document.createElement('div');
         item.className = 'output-item';
-        item.innerHTML = `
-          <span class="output-fname">${fname}</span>
-          <a class="output-dl" href="/download/${encodeURIComponent(fname)}" download="${fname}">⟶ DOWNLOAD</a>
-        `;
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'output-fname';
+        nameSpan.textContent = fname;
+        const dlLink = document.createElement('a');
+        dlLink.className = 'output-dl';
+        dlLink.href = '/download/' + encodeURIComponent(fname);
+        dlLink.download = fname;
+        dlLink.textContent = '\u27f6 DOWNLOAD';
+        item.appendChild(nameSpan);
+        item.appendChild(dlLink);
         outList.appendChild(item);
       });
     } catch (err) {
