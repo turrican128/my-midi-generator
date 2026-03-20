@@ -451,9 +451,7 @@ if __name__ == '__main__':
         sys.exit(1)
     preset_cfg = PRESETS[preset_name]
 
-    if output_path is None:
-        base = os.path.splitext(os.path.basename(input_path))[0]
-        output_path = os.path.join(OUTPUT_DIR, f"{base}_harmony.mid")
+    user_provided_output = (output_path is not None)
 
     ext = os.path.splitext(input_path)[1].lower()
 
@@ -473,6 +471,11 @@ if __name__ == '__main__':
                 sys.exit(1)
             scale_root, scale_type = detect_scale(note_list)
             print(f"Auto-detected scale: {scale_root} {scale_type}")
+
+        if not user_provided_output:
+            safe_scale = scale_type.replace(' ', '_')
+            base = os.path.splitext(os.path.basename(input_path))[0]
+            output_path = os.path.join(OUTPUT_DIR, f"{base}_{scale_root}_{safe_scale}_harmony.mid")
 
         scale_pcs = build_scale(scale_root, scale_type)
         print(f"Scale: {scale_root} {scale_type} -> {scale_pcs}")

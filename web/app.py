@@ -58,7 +58,8 @@ def run_harmony():
 
     try:
         f.save(tmp_path)
-        out_file = OUTPUT_DIR / f'{output_name}_harmony.mid'
+        safe_scale = scale_type.replace(' ', '_')
+        out_file = OUTPUT_DIR / f'{output_name}_{root}_{safe_scale}_harmony.mid'
         cmd = [
             sys.executable, str(PROJECT_ROOT / 'src' / 'generate_harmony.py'),
             str(tmp_path),
@@ -69,7 +70,7 @@ def run_harmony():
         result = subprocess.run(cmd, capture_output=True, text=True, cwd=str(PROJECT_ROOT))
         if result.returncode != 0:
             return jsonify({'error': result.stderr or result.stdout}), 400
-        return jsonify({'files': [f'{output_name}_harmony.mid']})
+        return jsonify({'files': [f'{output_name}_{root}_{safe_scale}_harmony.mid']})
     finally:
         tmp_path.unlink(missing_ok=True)
 
@@ -107,10 +108,32 @@ def run_multitrack():
         result = subprocess.run(cmd, capture_output=True, text=True, cwd=str(PROJECT_ROOT))
         if result.returncode != 0:
             return jsonify({'error': result.stderr or result.stdout}), 400
-        files = [f'{output_name}.mid']
-        log_path = OUTPUT_DIR / f'{output_name}.log'
-        if log_path.exists():
-            files.append(f'{output_name}.log')
+
+        # Parse detected scale from stdout and rename output files
+        detected_root = None
+        detected_scale = None
+        for line in result.stdout.splitlines():
+            if line.startswith('DETECTED_SCALE:'):
+                parts = line.split(':')
+                detected_root = parts[1]
+                detected_scale = parts[2]
+                break
+
+        if detected_root and detected_scale:
+            safe_scale = detected_scale.replace(' ', '_')
+            new_name = f'{output_name}_{detected_root}_{safe_scale}'
+            old_mid = OUTPUT_DIR / f'{output_name}.mid'
+            new_mid = OUTPUT_DIR / f'{new_name}.mid'
+            if old_mid.exists():
+                old_mid.rename(new_mid)
+            old_log = OUTPUT_DIR / f'{output_name}.log'
+            new_log = OUTPUT_DIR / f'{new_name}.log'
+            if old_log.exists():
+                old_log.rename(new_log)
+            files = [f'{new_name}.mid']
+        else:
+            files = [f'{output_name}.mid']
+
         return jsonify({'files': files})
     finally:
         tmp_path.unlink(missing_ok=True)
@@ -138,7 +161,8 @@ def run_scale():
 
     try:
         f.save(tmp_path)
-        out_file = OUTPUT_DIR / f'{output_name}_converted.mid'
+        safe_scale = scale_type.replace(' ', '_')
+        out_file = OUTPUT_DIR / f'{output_name}_{root}_{safe_scale}_converted.mid'
         cmd = [
             sys.executable, str(PROJECT_ROOT / 'src' / 'scale_converter.py'),
             str(tmp_path),
@@ -148,11 +172,7 @@ def run_scale():
         result = subprocess.run(cmd, capture_output=True, text=True, cwd=str(PROJECT_ROOT))
         if result.returncode != 0:
             return jsonify({'error': result.stderr or result.stdout}), 400
-        files = [f'{output_name}_converted.mid']
-        log_path = OUTPUT_DIR / f'{output_name}_converted.log'
-        if log_path.exists():
-            files.append(f'{output_name}_converted.log')
-        return jsonify({'files': files})
+        return jsonify({'files': [f'{output_name}_{root}_{safe_scale}_converted.mid']})
     finally:
         tmp_path.unlink(missing_ok=True)
 
