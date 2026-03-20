@@ -1,5 +1,144 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"><title>Synth MIDI Generator</title></head>
-<body><h1>SYNTH MIDI GENERATOR</h1><p>Coming soon...</p></body>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Synth MIDI Generator</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="app-frame">
+
+    <header class="app-header">
+      <div class="app-logo">
+        <div class="logo-title">SYNTH MIDI GENERATOR</div>
+        <div class="logo-sub">◈ SYNTHWAVE PRODUCTION TOOLKIT ◈</div>
+      </div>
+      <nav class="tabs" role="tablist">
+        <button class="tab active" data-tab="harmony" role="tab">◉ GENERATE HARMONY</button>
+        <button class="tab" data-tab="multitrack" role="tab">○ MULTI-TRACK MIDI</button>
+        <button class="tab" data-tab="scale" role="tab">○ SCALE CONVERTER</button>
+      </nav>
+    </header>
+
+    <main class="app-body">
+
+      <!-- HARMONY PANEL -->
+      <section class="panel active" id="panel-harmony">
+        <div class="drop-zone" id="drop-harmony" data-accept=".txt,.mid">
+          <div class="dz-icon">◈</div>
+          <div class="dz-title">DROP FILE HERE</div>
+          <div class="dz-sub">TXT or MID</div>
+          <div class="dz-filename"></div>
+          <input type="file" class="file-input" accept=".txt,.mid" aria-label="Upload file for harmony">
+        </div>
+        <div class="options-grid three-col">
+          <div class="opt-group">
+            <label class="opt-label" for="harmony-preset">PRESET</label>
+            <select class="opt-select" id="harmony-preset" name="preset">
+              <option value="synthwave">synthwave</option>
+              <option value="80s">80s</option>
+              <option value="romantic">romantic</option>
+              <option value="default">default</option>
+            </select>
+          </div>
+          <div class="opt-group">
+            <label class="opt-label" for="harmony-root">ROOT NOTE</label>
+            <select class="opt-select" id="harmony-root" name="root">
+              <option>C</option><option>C#</option><option>D</option><option>D#</option>
+              <option>E</option><option>F</option><option>F#</option><option>G</option>
+              <option>G#</option><option>A</option><option>A#</option><option>B</option>
+            </select>
+          </div>
+          <div class="opt-group">
+            <label class="opt-label" for="harmony-scale">SCALE TYPE</label>
+            <select class="opt-select" id="harmony-scale" name="scale_type">
+              <option value="minor">minor</option>
+              <option value="major">major</option>
+              <option value="dorian">dorian</option>
+              <option value="mixolydian">mixolydian</option>
+              <option value="harmonic minor">harmonic minor</option>
+            </select>
+          </div>
+        </div>
+        <button class="gen-btn" id="btn-harmony" data-route="/run/harmony" disabled>▶▶ GENERATE HARMONY</button>
+        <div class="error-msg" id="err-harmony"></div>
+        <div class="output-section" id="out-harmony">
+          <div class="output-label">OUTPUT FILES</div>
+          <div class="output-list"></div>
+        </div>
+      </section>
+
+      <!-- MULTI-TRACK PANEL -->
+      <section class="panel" id="panel-multitrack">
+        <div class="drop-zone" id="drop-multitrack" data-accept=".txt">
+          <div class="dz-icon">◈</div>
+          <div class="dz-title">DROP FILE HERE</div>
+          <div class="dz-sub">TXT only</div>
+          <div class="dz-filename"></div>
+          <input type="file" class="file-input" accept=".txt" aria-label="Upload file for multi-track">
+        </div>
+        <div class="options-grid two-col">
+          <div class="opt-group">
+            <label class="opt-label" for="mt-tempo">TEMPO (BPM)</label>
+            <div class="slider-row">
+              <input type="range" class="opt-slider" id="mt-tempo" min="60" max="200" value="110">
+              <span class="slider-val" id="mt-tempo-val">110</span>
+            </div>
+          </div>
+          <div class="opt-group">
+            <label class="opt-label" for="mt-outname">OUTPUT NAME</label>
+            <input type="text" class="opt-input" id="mt-outname" name="outname" placeholder="auto from filename">
+          </div>
+        </div>
+        <button class="gen-btn" id="btn-multitrack" data-route="/run/multitrack" disabled>▶▶ GENERATE MIDI</button>
+        <div class="error-msg" id="err-multitrack"></div>
+        <div class="output-section" id="out-multitrack">
+          <div class="output-label">OUTPUT FILES</div>
+          <div class="output-list"></div>
+        </div>
+      </section>
+
+      <!-- SCALE PANEL -->
+      <section class="panel" id="panel-scale">
+        <div class="drop-zone" id="drop-scale" data-accept=".mid">
+          <div class="dz-icon">◈</div>
+          <div class="dz-title">DROP FILE HERE</div>
+          <div class="dz-sub">MID only</div>
+          <div class="dz-filename"></div>
+          <input type="file" class="file-input" accept=".mid" aria-label="Upload file for scale conversion">
+        </div>
+        <div class="options-grid two-col">
+          <div class="opt-group">
+            <label class="opt-label" for="scale-root">ROOT NOTE</label>
+            <select class="opt-select" id="scale-root" name="root">
+              <option>C</option><option>C#</option><option>D</option><option>D#</option>
+              <option>E</option><option>F</option><option>F#</option><option>G</option>
+              <option>G#</option><option>A</option><option>A#</option><option>B</option>
+            </select>
+          </div>
+          <div class="opt-group">
+            <label class="opt-label" for="scale-type">SCALE TYPE</label>
+            <select class="opt-select" id="scale-type" name="scale_type">
+              <option value="minor">minor</option>
+              <option value="major">major</option>
+              <option value="dorian">dorian</option>
+              <option value="mixolydian">mixolydian</option>
+              <option value="harmonic minor">harmonic minor</option>
+            </select>
+          </div>
+        </div>
+        <button class="gen-btn" id="btn-scale" data-route="/run/scale" disabled>▶▶ CONVERT SCALE</button>
+        <div class="error-msg" id="err-scale"></div>
+        <div class="output-section" id="out-scale">
+          <div class="output-label">OUTPUT FILES</div>
+          <div class="output-list"></div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
 </html>
