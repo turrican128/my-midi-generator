@@ -294,16 +294,8 @@ def detect_vibe(midi_notes, scale_type):
     return vibe
 
 
-def write_log(tracks, output_filename, tempo):
+def write_log(tracks, output_filename, tempo, root, scale_type, pitch_classes, vibe):
     """Write a log file with musical analysis for all tracks."""
-    # Combine all notes for overall analysis
-    all_midi_notes = []
-    for t in tracks:
-        all_midi_notes.extend(t['notes'])
-
-    root, scale_type, pitch_classes = detect_scale(all_midi_notes)
-    vibe = detect_vibe(all_midi_notes, scale_type)
-
     log_name = os.path.splitext(output_filename)[0] + '.log'
     log_path = os.path.join(OUTPUT_DIR, log_name)
 
@@ -437,10 +429,6 @@ if __name__ == "__main__":
         print("Usage: python multi_track_midi_generator.py track.txt [-o output.mid] [--tempo 120]")
         sys.exit(1)
 
-    if output_file is None:
-        base_name = os.path.splitext(os.path.basename(input_file))[0]
-        output_file = f"{base_name}.mid"
-
     try:
         track = parse_track_file(input_file, default_channel=0)
         rhythm_display = track['rhythm_pattern'] if track['rhythm_pattern'] else [1.5, 0.5, 0.5, 1.5]
@@ -448,8 +436,20 @@ if __name__ == "__main__":
               f"| ch:{track['channel']} prog:{track['program']} vel:{track['velocity']} "
               f"| rhythm: {rhythm_display}")
         print(f"\nTempo: {tempo} BPM")
+
+        # Detect scale before building filename
+        all_midi_notes = track['notes']
+        root, scale_type, pitch_classes = detect_scale(all_midi_notes)
+        vibe = detect_vibe(all_midi_notes, scale_type)
+        print(f"DETECTED_SCALE:{root}:{scale_type}")
+
+        if output_file is None:
+            safe_scale = scale_type.replace(' ', '_')
+            base_name = os.path.splitext(os.path.basename(input_file))[0]
+            output_file = f"{base_name}_{root}_{safe_scale}.mid"
+
         create_multi_track_midi([track], output_file, tempo)
-        write_log([track], output_file, tempo)
+        write_log([track], output_file, tempo, root, scale_type, pitch_classes, vibe)
 
     except (FileNotFoundError, ValueError) as e:
         print(f"Error: {e}")

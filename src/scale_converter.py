@@ -193,11 +193,14 @@ def convert(input_path, root, scale_type, output_path):
 # Output path & log helpers
 # ---------------------------------------------------------------------------
 
-def build_output_path(input_path, output_arg):
-    """Default: output/<stem>_converted.mid. Returns output_arg if provided."""
+def build_output_path(input_path, output_arg, root=None, scale_type=None):
+    """Default: output/<stem>_<root>_<scale>_converted.mid. Returns output_arg if provided."""
     if output_arg:
         return output_arg
     stem = Path(input_path).stem
+    if root and scale_type:
+        safe_scale = scale_type.replace(' ', '_')
+        return os.path.join(OUTPUT_DIR, f'{stem}_{root}_{safe_scale}_converted.mid')
     return os.path.join(OUTPUT_DIR, f'{stem}_converted.mid')
 
 
@@ -253,7 +256,7 @@ if __name__ == '__main__':
         print(f'Error: input file not found: {args.input_file}', file=sys.stderr)
         sys.exit(1)
 
-    output_path = build_output_path(args.input_file, args.output)
+    output_path = build_output_path(args.input_file, args.output, root, scale_type)
 
     try:
         total_notes, changed_notes = convert(args.input_file, root, scale_type, output_path)
