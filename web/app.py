@@ -1,5 +1,6 @@
 import sys
 import uuid
+import re
 import subprocess
 from pathlib import Path
 from flask import Flask, render_template, send_from_directory, abort, request, jsonify
@@ -13,6 +14,10 @@ OUTPUT_DIR.mkdir(exist_ok=True)
 ALLOWED_ROOTS = {'C','C#','D','D#','E','F','F#','G','G#','A','A#','B'}
 ALLOWED_SCALES = {'major','minor','dorian','mixolydian','harmonic minor'}
 ALLOWED_PRESETS = {'default','romantic','80s','synthwave'}
+
+def _safe_stem(name: str) -> str:
+    """Strip non-word chars from a filename stem, limit length."""
+    return re.sub(r'[^\w\-]', '_', name)[:40] or 'file'
 
 @app.route('/')
 def index():
@@ -44,7 +49,7 @@ def run_harmony():
         return jsonify({'error': f'Invalid scale: {scale_type}'}), 400
 
     uid = uuid.uuid4().hex[:8]
-    stem = Path(f.filename).stem
+    stem = _safe_stem(Path(f.filename).stem)
     output_name = f'{uid}_{stem}'
     suffix = Path(f.filename).suffix.lower()
     tmp_path = OUTPUT_DIR / f'tmp_{output_name}{suffix}'
@@ -81,7 +86,7 @@ def run_multitrack():
 
     uid = uuid.uuid4().hex[:8]
     custom_name = request.form.get('outname', '').strip()
-    stem = custom_name if custom_name else Path(f.filename).stem
+    stem = _safe_stem(custom_name) if custom_name else _safe_stem(Path(f.filename).stem)
     output_name = f'{uid}_{stem}'
     suffix = Path(f.filename).suffix.lower()
     tmp_path = OUTPUT_DIR / f'tmp_{output_name}{suffix}'
@@ -121,7 +126,7 @@ def run_scale():
         return jsonify({'error': f'Invalid scale: {scale_type}'}), 400
 
     uid = uuid.uuid4().hex[:8]
-    stem = Path(f.filename).stem
+    stem = _safe_stem(Path(f.filename).stem)
     output_name = f'{uid}_{stem}'
     tmp_path = OUTPUT_DIR / f'tmp_{output_name}.mid'
 
