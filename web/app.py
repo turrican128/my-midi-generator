@@ -131,13 +131,8 @@ def run_multitrack():
             if old_log.exists():
                 old_log.rename(new_log)
             files = [f'{new_name}.mid']
-            if new_log.exists():
-                files.append(f'{new_name}.log')
         else:
             files = [f'{output_name}.mid']
-            log_path = OUTPUT_DIR / f'{output_name}.log'
-            if log_path.exists():
-                files.append(f'{output_name}.log')
 
         return jsonify({'files': files})
     finally:
@@ -177,11 +172,7 @@ def run_scale():
         result = subprocess.run(cmd, capture_output=True, text=True, cwd=str(PROJECT_ROOT))
         if result.returncode != 0:
             return jsonify({'error': result.stderr or result.stdout}), 400
-        files = [f'{output_name}_{root}_{safe_scale}_converted.mid']
-        log_path = OUTPUT_DIR / f'{output_name}_{root}_{safe_scale}_converted.log'
-        if log_path.exists():
-            files.append(f'{output_name}_{root}_{safe_scale}_converted.log')
-        return jsonify({'files': files})
+        return jsonify({'files': [f'{output_name}_{root}_{safe_scale}_converted.mid']})
     finally:
         tmp_path.unlink(missing_ok=True)
 
