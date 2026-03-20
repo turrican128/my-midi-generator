@@ -83,7 +83,8 @@ def run_multitrack():
     custom_name = request.form.get('outname', '').strip()
     stem = custom_name if custom_name else Path(f.filename).stem
     output_name = f'{uid}_{stem}'
-    tmp_path = OUTPUT_DIR / f'tmp_{output_name}.txt'
+    suffix = Path(f.filename).suffix.lower()
+    tmp_path = OUTPUT_DIR / f'tmp_{output_name}{suffix}'
 
     try:
         f.save(tmp_path)
