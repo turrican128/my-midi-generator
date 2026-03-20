@@ -177,4 +177,4 @@ def run_scale():
         tmp_path.unlink(missing_ok=True)
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)  # local-only; never expose to a network
+    app.run(debug=False, host='0.0.0.0', port=5000)
