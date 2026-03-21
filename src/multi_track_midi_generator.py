@@ -181,8 +181,8 @@ def parse_track_file(filepath, default_channel=0):
             elif key == 'rhythm':
                 rhythm_values = re.split(r'[,\s]+', value)
                 rhythm_values = [v for v in rhythm_values if v]
-                if len(rhythm_values) != 4:
-                    raise ValueError(f"Rhythm pattern must have 4 values, got {len(rhythm_values)}")
+                if len(rhythm_values) < 1:
+                    raise ValueError("Rhythm pattern must have at least 1 value")
                 track_info['rhythm_pattern'] = [float(v) for v in rhythm_values]
             else:
                 # Unknown header — treat as a note line
@@ -197,8 +197,9 @@ def parse_track_file(filepath, default_channel=0):
     for bar_num, line in enumerate(note_lines, 1):
         beats = parse_beats(line)
 
-        if len(beats) != 4:
-            raise ValueError(f"{filepath}, bar {bar_num}: Expected 4 beats, got {len(beats)}")
+        expected = len(track_info['rhythm_pattern']) if track_info['rhythm_pattern'] else 4
+        if len(beats) != expected:
+            raise ValueError(f"{filepath}, bar {bar_num}: Expected {expected} beats (matching rhythm), got {len(beats)}")
 
         track_info['note_names_per_bar'].append(beats)
         track_info['beats'].append(beats)

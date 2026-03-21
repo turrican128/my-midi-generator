@@ -131,6 +131,17 @@ document.querySelectorAll('.gen-btn').forEach(btn => {
   });
 });
 
+// ── Clear output buttons ──────────────────────────────────────────────────
+document.querySelectorAll('.clear-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const panel = btn.closest('.panel');
+    const outList = panel.querySelector('.output-list');
+    const errEl = panel.querySelector('.error-msg');
+    if (outList) outList.innerHTML = '';
+    if (errEl) errEl.textContent = '';
+  });
+});
+
 // ── Helpers ────────────────────────────────────────────────────────────────
 function showError(zone, msg) {
   const panel = zone.closest('.panel');
