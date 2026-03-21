@@ -324,11 +324,35 @@ body {
   padding: 16px;
 }
 
+.output-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
 .output-label {
   color: var(--muted);
   font-size: 9px;
   letter-spacing: 3px;
-  margin-bottom: 12px;
+}
+
+.clear-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--pink);
+  font-family: inherit;
+  font-size: 9px;
+  letter-spacing: 2px;
+  padding: 3px 10px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.clear-btn:hover {
+  background: rgba(255, 0, 255, 0.1);
+  border-color: var(--pink);
+  text-shadow: 0 0 6px var(--pink);
 }
 
 .output-item {
