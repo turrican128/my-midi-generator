@@ -437,6 +437,53 @@ body {
   }
 }
 
+/* ── Format Guide ── */
+.format-guide {
+  border: 1px solid var(--border-cyan);
+  border-radius: 4px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+.format-guide-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--cyan);
+  cursor: pointer;
+  user-select: none;
+  background: rgba(0, 255, 255, 0.04);
+}
+.format-guide-header:hover { background: rgba(0, 255, 255, 0.08); }
+.fmt-arrow { transition: transform 0.2s; display: inline-block; }
+.format-guide.open .fmt-arrow { transform: rotate(90deg); }
+.fmt-download {
+  margin-left: auto;
+  color: var(--pink);
+  text-decoration: none;
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-shadow: 0 0 6px var(--pink);
+}
+.fmt-download:hover { text-shadow: 0 0 12px var(--pink); }
+.format-guide-body {
+  display: none;
+  border-top: 1px solid var(--border-cyan);
+  padding: 12px;
+}
+.format-guide.open .format-guide-body { display: block; }
+.fmt-pre {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 11px;
+  line-height: 1.7;
+  color: rgba(0, 255, 255, 0.75);
+  white-space: pre;
+  overflow-x: auto;
+}
+.fmt-comment { color: rgba(255, 0, 255, 0.5); }
+
 /* ── Responsive ── */
 @media (max-width: 500px) {
   .options-grid.three-col { grid-template-columns: 1fr; }
