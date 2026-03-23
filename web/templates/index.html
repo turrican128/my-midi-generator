@@ -95,6 +95,24 @@
             <input type="text" class="opt-input" id="mt-outname" name="outname" placeholder="auto from filename">
           </div>
         </div>
+        <div class="format-guide">
+          <div class="format-guide-header" id="fmt-toggle" onclick="this.parentElement.classList.toggle('open')" role="button" tabindex="0">
+            <span class="fmt-arrow">▶</span> FORMAT REFERENCE
+            <a class="fmt-download" href="/examples/lead" download onclick="event.stopPropagation()">⬇ DOWNLOAD EXAMPLE</a>
+          </div>
+          <div class="format-guide-body">
+            <pre class="fmt-pre"><span class="fmt-comment"># Optional headers (any order)</span>
+name: Track Name
+program: 81          <span class="fmt-comment"># GM instrument 0–127</span>
+channel: 0           <span class="fmt-comment"># MIDI channel 0–15 (skip 9)</span>
+velocity: 100        <span class="fmt-comment"># 0–127</span>
+rhythm: 1.5, 0.5, 0.5, 1.5  <span class="fmt-comment"># beat durations per bar</span>
+
+<span class="fmt-comment"># Notes — 4 beats per bar, one bar per line</span>
+C5 Eb5 G5 C6
+[C4 E4 G4] Bb4 D5 F5  <span class="fmt-comment"># brackets = chord (1 beat)</span></pre>
+          </div>
+        </div>
         <button class="gen-btn" id="btn-multitrack" data-route="/run/multitrack" disabled>▶▶ GENERATE MIDI</button>
         <div class="error-msg" id="err-multitrack"></div>
         <div class="output-section" id="out-multitrack">

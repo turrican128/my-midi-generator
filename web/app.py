@@ -74,6 +74,12 @@ def run_harmony():
     finally:
         tmp_path.unlink(missing_ok=True)
 
+@app.route('/examples/lead')
+def example_lead():
+    return send_from_directory(str(PROJECT_ROOT), 'example_lead.txt',
+                               as_attachment=True,
+                               download_name='example_lead.txt')
+
 @app.route('/run/multitrack', methods=['POST'])
 def run_multitrack():
     f = request.files.get('file')
